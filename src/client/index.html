@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battle City</title>
+<style>
+  :root {
+    --ink: #101a12;
+    --field: #203a2e;
+    --line: #4b6d57;
+    --amber: #d9b15f;
+    --pink: #d76652;
+    --cyan: #7fe3cb;
+    --text: #f4f3d9;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text); font-family: var(--mono); overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; touch-action: none; }
+  .hidden { display: none !important; }
+
+  #menu {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    background: radial-gradient(ellipse at 50% 35%, rgba(24,51,41,.92), rgba(12,20,18,.98));
+  }
+  .card { width: min(420px, 90vw); padding: 28px; border: 2px solid var(--amber); background: var(--field); box-shadow: 8px 8px 0 var(--pink); }
+  h1 { margin: 0 0 4px; font: 800 44px/1 "Arial Narrow", "Helvetica Neue", Impact, sans-serif; letter-spacing: .02em; color: var(--amber); }
+  .sub { margin: 0 0 22px; color: #dfe9ba; font-size: 13px; }
+  label { display: block; font-size: 13px; margin-bottom: 6px; color: #9aa6e8; }
+  input { width: 100%; padding: 12px; font: 600 16px var(--mono); color: var(--text); background: var(--ink); border: 2px solid var(--line); outline: none; }
+  input:focus-visible { border-color: var(--cyan); }
+  button { width: 100%; margin-top: 14px; padding: 13px; font: 800 16px var(--mono); color: var(--ink); background: var(--amber); border: 0; cursor: pointer; }
+  button:hover:not(:disabled) { background: #ffd968; }
+  button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 2px; }
+  button:disabled { opacity: .55; cursor: default; }
+  #status { min-height: 18px; margin: 12px 0 0; font-size: 13px; color: var(--pink); }
+  .toggle { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: var(--text); font-size: 14px; }
+  .toggle input { width: auto; margin: 0; accent-color: var(--cyan); }
+  .keys { margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.7; color: #9aa6e8; }
+  .hud-hidden #hud { display: none !important; }
+  .keys b { color: var(--text); font-weight: 600; }
+
+  #hud > * { position: fixed; pointer-events: none; }
+  #hpbar { left: 50%; bottom: 22px; width: min(360px, 60vw); transform: translateX(-50%); }
+  #hp-track { height: 14px; border: 2px solid var(--text); background: rgba(6,11,36,.7); }
+  #hp-fill { height: 100%; width: 100%; background: var(--cyan); transition: width .12s linear; }
+  #hp-text { display: block; margin-top: 4px; text-align: center; font-size: 13px; }
+  #board { top: 14px; right: 14px; min-width: 170px; padding: 10px 12px; background: rgba(6,11,36,.72); border: 1px solid var(--line); font-size: 13px; }
+  #board .row { display: flex; justify-content: space-between; gap: 18px; padding: 2px 0; }
+  #board .row.me { font-weight: 800; }
+  #feed { top: 14px; left: 14px; font-size: 13px; line-height: 1.6; }
+  #debug { left: 14px; bottom: 12px; font-size: 12px; color: #7c89d6; }
+  #dead { top: 40%; left: 50%; transform: translateX(-50%); font: 800 34px "Arial Narrow", Impact, sans-serif; color: var(--pink); }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div id="feed"></div>
+  <div id="board"></div>
+  <div id="hpbar"><div id="hp-track"><div id="hp-fill"></div></div><span id="hp-text">100</span></div>
+  <div id="dead" class="hidden">Вас знищено. Відродження за мить…</div>
+  <div id="debug"></div>
+</div>
+
+<div id="menu">
+  <div class="card">
+    <div id="menu-intro">
+      <h1>Battle City</h1>
+      <p class="sub">Класичний танковий бій в аркадному стилі.</p>
+      <label for="name">Ваше імʼя</label>
+      <input id="name" maxlength="16" autocomplete="off" placeholder="player" autofocus>
+
+      <label for="level-select" style="margin-top: 14px;">Рівень</label>
+      <select id="level-select" style="width: 100%; margin-top: 6px; padding: 12px; background: var(--ink); color: var(--text); border: 2px solid var(--line); font: 600 16px var(--mono);">
+        <option value="0">Рівень 1 — Початок</option>
+        <option value="1">Рівень 2 — Блокада</option>
+        <option value="2">Рівень 3 — Поріг</option>
+      </select>
+
+      <button id="play">Грати</button>
+      <p id="status" role="status"></p>
+      <div class="keys">
+        <b>WASD</b> або стрілки — рух<br>
+        <b>Миша</b> — приціл, <b>ЛКМ</b> або <b>пробіл</b> — постріл<br>
+        <b>P</b> — вимкнути/увімкнути передбачення руху<br>
+        <b>ESC</b> — відкриває меню паузи
+      </div>
+    </div>
+
+    <div id="pause-menu" class="hidden">
+      <h1>Пауза</h1>
+      <button id="resume">Продовжити</button>
+      <button id="options">Опції</button>
+      <button id="quit">Вийти в меню</button>
+    </div>
+
+    <div id="options-menu" class="hidden">
+      <h1>Опції</h1>
+      <label class="toggle"><input id="opt-prediction" type="checkbox" checked> Prediction</label>
+      <label class="toggle"><input id="opt-debug" type="checkbox" checked> Показувати debug HUD</label>
+      <label class="toggle"><input id="opt-hud" type="checkbox" checked> Показувати HUD</label>
+      <button id="options-back">Назад</button>
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>

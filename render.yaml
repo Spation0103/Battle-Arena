@@ -1,0 +1,12 @@
+# Альтернатива: Render.com (New -> Blueprint). Free-план засинає після простою,
+# тому для живої гри беріть starter.
+services:
+  - type: web
+    name: neon-arena
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    numInstances: 1
+    envVars:
+      - key: BOT_FILL
+        value: "4"

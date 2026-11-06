@@ -1,0 +1,30 @@
+{
+  "name": "battle-city",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Real-time multiplayer browser arena: authoritative Node server, client-side prediction, binary protocol.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n client,server \"node build.mjs --watch\" \"tsx watch src/server/index.ts\"",
+    "build": "node build.mjs",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "build:exe": "node build.mjs && node build-exe.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "concurrently": "^9.0.0",
+    "esbuild": "^0.25.0",
+    "postject": "^1.0.0-alpha.6",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
